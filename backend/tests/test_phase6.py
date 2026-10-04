@@ -13,7 +13,7 @@ from app.modules.hangers import service as hanger_service, repository as hanger_
 @pytest.fixture(autouse=True)
 def reset():
     order_repo._orders.clear(); order_repo._events.clear(); offer_repo._offers.clear(); offer_repo._usage.clear()
-    complaint_repo._complaints.clear(); complaint_repo._events.clear(); notification_repo._notifications.clear()
+    complaint_repo._complaints.clear(); complaint_repo._events.clear(); notification_repo._notifications.clear(); notification_repo._devices.clear(); notification_repo._preferences.clear(); notification_repo._attempts.clear()
     hanger_repo._hangers.clear(); hanger_repo._returns.clear(); hanger_repo._movements.clear()
 
 def make_order(status='BOOKING_CONFIRMED'):
@@ -57,3 +57,44 @@ def test_hanger_issue_and_return_request():
     assert hanger_service.update(h['hanger_id'],{'status':'RETURNED'})['status']=='RETURNED'
     r=hanger_service.request_return({'customer_id':'C1','address_id':'A1','quantity':2,'preferred_slot_id':'S1'})
     assert r['status']=='REQUESTED'
+
+def test_notification_idempotency_in_memory():
+    a=notification_service.queue({'recipient_id':'C1','channel':'IN_APP','title':'A','message':'B','idempotency_key':'ORDER-O1-READY'})
+    b=notification_service.queue({'recipient_id':'C1','channel':'IN_APP','title':'A2','message':'B2','idempotency_key':'ORDER-O1-READY'})
+    assert a['notification_id']==b['notification_id']
+
+def test_notification_device_registration_and_deactivation():
+    d=notification_service.register_device({'user_id':'C1','platform':'ANDROID','token':'token-1234567890'})
+    assert d['active'] is True
+    assert notification_repo.deactivate_device('token-1234567890') is True
+    assert notification_repo.active_tokens('C1')==[]
+
+
+def test_notification_event_dispatch_respects_preferences():
+    notification_service.set_preference({"user_id":"C1","event_type":"BOOKING","channel":"PUSH","enabled":False})
+    out=notification_service.dispatch_event({
+        "recipient_id":"C1","event_type":"BOOKING","title":"Booking","message":"Confirmed",
+        "idempotency_key":"BOOKING-O1"
+    })
+    assert len(out)==1
+    assert out[0]["channel"]=="IN_APP"
+    assert out[0]["idempotency_key"]=="BOOKING-O1:IN_APP"
+
+def test_notification_read_and_recipient_isolation_in_service():
+    n=notification_service.queue({"recipient_id":"C1","channel":"IN_APP","title":"A","message":"B"})
+    assert notification_service.mark(n["notification_id"],"READ")["status"]=="READ"
+
+def test_device_re_registration_updates_single_token():
+    a=notification_service.register_device({"user_id":"C1","platform":"ANDROID","token":"token-abcdefghij","app_version":"1.0"})
+    b=notification_service.register_device({"user_id":"C1","platform":"ANDROID","token":"token-abcdefghij","app_version":"1.1"})
+    assert b["active"] is True
+    assert b["app_version"]=="1.1"
+    assert notification_repo.active_tokens("C1")==["token-abcdefghij"]
+
+def test_notification_send_without_provider_fails_audibly():
+    n=notification_service.queue({"recipient_id":"C1","channel":"PUSH","title":"A","message":"B"})
+    notification_service.register_device({"user_id":"C1","platform":"ANDROID","token":"token-abcdefghij"})
+    result=notification_service.send(n["notification_id"])
+    assert result["status"]=="FAILED"
+    assert result["failure_code"]=="PROVIDER_NOT_CONFIGURED"
+    assert len(notification_repo._attempts)==1

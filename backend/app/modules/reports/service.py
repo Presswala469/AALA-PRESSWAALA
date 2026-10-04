@@ -66,7 +66,7 @@ def _memory_report(report_type, f):
             if f.get('category') and row.get('category') != f['category']: continue
             rows.append(deepcopy(row))
         return rows[:f.get('limit',500)]
-    if report_type in {'garments','stations','offers','customer_locations','customer_history'}:
+    if report_type in {'garments','stations','offers','customer_locations','customer_history','payments','delivery','notifications','audit','inventory_movements','admin_actions'}:
         return []
     raise ValueError('Unsupported report type')
 

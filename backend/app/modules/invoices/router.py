@@ -1,5 +1,4 @@
 from fastapi import APIRouter, Depends, HTTPException, Response
-
 from app.core.constants import UserRole
 from app.core.permissions import current_claims, require_role
 from app.modules.invoices.schemas import InvoiceCreate
@@ -8,40 +7,51 @@ from app.modules.invoices import service
 router = APIRouter()
 
 
-def err(exc: ValueError) -> None:
-    raise HTTPException(400, str(exc))
+def _visible(invoice, claims):
+    if not invoice:
+        return False
+    role = claims.get('role')
+    if role in {UserRole.SUPER_ADMIN.value, UserRole.ADMIN.value, UserRole.STATION_MANAGER.value}:
+        return True
+    return role == UserRole.CUSTOMER.value and str((invoice.get('customer_snapshot') or {}).get('customer_id')) == str(claims.get('sub'))
 
 
-_AUTH = Depends(current_claims)
-_ADMIN = Depends(require_role(UserRole.SUPER_ADMIN, UserRole.ADMIN))
-
-
-@router.post("/orders/{order_id}", response_model=dict, dependencies=[_ADMIN])
-def create(order_id: str, payload: InvoiceCreate):
+@router.post('/orders/{order_id}', response_model=dict, dependencies=[Depends(require_role(UserRole.SUPER_ADMIN, UserRole.ADMIN))])
+def create(order_id, payload: InvoiceCreate):
     try:
-        return service.create(order_id, payload.tax_amount)
-    except ValueError as exc:
-        err(exc)
+        return service.create(order_id, tax_type=payload.tax_type, tax_mode=payload.tax_mode, payment_reference=payload.payment_reference, tax_rate=payload.tax_rate)
+    except ValueError as e:
+        raise HTTPException(400, str(e))
 
 
-@router.get("/{invoice_id}", response_model=dict, dependencies=[_AUTH])
-def get(invoice_id: str):
-    return service.get(invoice_id) or {}
+@router.get('/{invoice_id}', response_model=dict)
+def get(invoice_id, claims=Depends(current_claims)):
+    invoice = service.get(invoice_id)
+    if not invoice:
+        raise HTTPException(404, 'Invoice not found')
+    if not _visible(invoice, claims):
+        raise HTTPException(403, 'Permission denied')
+    return invoice
 
 
-@router.get("/orders/{order_id}", response_model=list, dependencies=[_AUTH])
-def by_order(order_id: str):
-    return service.by_order(order_id)
+@router.get('/orders/{order_id}', response_model=list)
+def by_order(order_id, claims=Depends(current_claims)):
+    invoices = service.by_order(order_id)
+    visible = [invoice for invoice in invoices if _visible(invoice, claims)]
+    if not visible:
+        raise HTTPException(403, 'Permission denied')
+    return visible
 
 
-@router.get("/{invoice_id}/pdf", response_class=Response, dependencies=[_AUTH])
-def pdf(invoice_id: str):
+@router.get('/{invoice_id}/pdf', response_class=Response)
+def pdf(invoice_id, claims=Depends(current_claims)):
+    invoice = service.get(invoice_id)
+    if not invoice:
+        raise HTTPException(404, 'Invoice not found')
+    if not _visible(invoice, claims):
+        raise HTTPException(403, 'Permission denied')
     try:
         data = service.pdf(invoice_id)
-        return Response(
-            content=data,
-            media_type="application/pdf",
-            headers={"Content-Disposition": f'inline; filename="{invoice_id}.pdf"'},
-        )
-    except ValueError as exc:
-        raise HTTPException(404, str(exc))
+        return Response(content=data, media_type='application/pdf', headers={'Content-Disposition': f'inline; filename="{invoice_id}.pdf"'})
+    except ValueError as e:
+        raise HTTPException(404, str(e))

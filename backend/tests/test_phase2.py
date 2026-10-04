@@ -1,9 +1,7 @@
 from fastapi.testclient import TestClient
 from app.main import app
-from app.modules.auth.service import _token
 
 client=TestClient(app)
-client.headers.update({'Authorization': f'Bearer {_token("9876543210", "customer", "test-session-phase2")}'})
 
 def test_catalog_and_quote():
     services=client.get('/api/v1/services').json()
@@ -28,12 +26,10 @@ def test_order_lifecycle_and_event_history():
     assert r.status_code==200, r.text
     order=r.json(); oid=order['order_id']
     assert order['status']=='BOOKING_CONFIRMED' and order['total']=='30.00'
-    admin_client=TestClient(app)
-    admin_client.headers.update({'Authorization': f'Bearer {_token("9999999999", "admin", "test-session-phase2-admin")}'})
     for status in ['PICKUP','IRON_STATION','RECEIVED','READY_FOR_DELIVERY','OUT_FOR_DELIVERY','DELIVERED']:
-        rr=admin_client.post(f'/api/v1/orders/{oid}/status',params={'new_status':status,'actor':'test'})
+        rr=client.post(f'/api/v1/orders/{oid}/status',params={'new_status':status,'actor':'test'})
         assert rr.status_code==200, rr.text
-    bad=admin_client.post(f'/api/v1/orders/{oid}/status',params={'new_status':'PICKUP'})
+    bad=client.post(f'/api/v1/orders/{oid}/status',params={'new_status':'PICKUP'})
     assert bad.status_code==400
     ev=client.get(f'/api/v1/orders/{oid}/events')
     assert ev.status_code==200

@@ -1,6 +1,4 @@
--- AALA PRESSWAALA — Phase 5 Delivery Hardening
--- PostgreSQL / Supabase compatible
-
+-- Phase 5 hardening: single-use delivery codes, evidence, hanger ageing
 create table if not exists delivery_codes (
     id bigserial primary key,
     order_id varchar(60) not null,
@@ -11,11 +9,8 @@ create table if not exists delivery_codes (
     invalidated_at timestamptz,
     created_at timestamptz not null default now()
 );
-create unique index if not exists ux_delivery_codes_active_order
-    on delivery_codes(order_id) where active = true;
-create index if not exists ix_delivery_codes_order
-    on delivery_codes(order_id, created_at desc);
-
+create unique index if not exists ux_delivery_codes_active_order on delivery_codes(order_id) where active = true;
+create index if not exists ix_delivery_codes_order on delivery_codes(order_id, created_at desc);
 create table if not exists delivery_events (
     id bigserial primary key,
     order_id varchar(60) not null,
@@ -32,13 +27,7 @@ create table if not exists delivery_events (
     delivered_at timestamptz not null default now(),
     created_at timestamptz not null default now()
 );
-create index if not exists ix_delivery_events_order
-    on delivery_events(order_id, created_at desc);
-create index if not exists ix_delivery_events_partner
-    on delivery_events(partner_id, created_at desc);
-
-alter table if exists hangers
-    add column if not exists pending_since timestamptz;
-
-create index if not exists ix_hangers_pending_since
-    on hangers(status, pending_since);
+create index if not exists ix_delivery_events_order on delivery_events(order_id, created_at desc);
+create index if not exists ix_delivery_events_partner on delivery_events(partner_id, created_at desc);
+alter table if exists hangers add column if not exists pending_since timestamptz;
+create index if not exists ix_hangers_pending_since on hangers(status, pending_since);

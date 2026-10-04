@@ -6,7 +6,7 @@ from pydantic_settings import BaseSettings, SettingsConfigDict
 
 class Settings(BaseSettings):
     app_name: str = "AALA PRESSWAALA API"
-    app_version: str = "1.18.0"
+    app_version: str = "0.1.0"
     environment: str = "development"
     api_prefix: str = "/api/v1"
     debug: bool = False
@@ -24,7 +24,6 @@ class Settings(BaseSettings):
     jwt_secret: str = "CHANGE_ME_IN_ENV"
     jwt_algorithm: str = "HS256"
     access_token_minutes: int = 60
-    delivery_code_ttl_minutes: int = 15
 
     model_config = SettingsConfigDict(
         env_file=".env",

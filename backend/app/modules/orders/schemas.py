@@ -32,21 +32,9 @@ class OrderOut(BaseModel):
  payment_method: str
  items: list[OrderItemOut]
  created_at: str
- customer_snapshot: dict | None = None
- address_snapshot: dict | None = None
- booking_snapshot: dict | None = None
- tat_started_at: str | None = None
- tat_due_at: str | None = None
- tat_completed_at: str | None = None
 class OrderEventOut(BaseModel):
  event_type: str
  from_status: str | None
  to_status: str | None
  actor: str | None
  created_at: str
- customer_snapshot: dict | None = None
- address_snapshot: dict | None = None
- booking_snapshot: dict | None = None
- tat_started_at: str | None = None
- tat_due_at: str | None = None
- tat_completed_at: str | None = None

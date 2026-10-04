@@ -21,9 +21,9 @@ from app.modules.hangers.router import router as hangers_router
 from app.modules.inventory.router import router as inventory_router
 from app.modules.audit.router import router as audit_router
 from app.modules.reports.router import router as reports_router
-from app.modules.ratings.router import router as ratings_router
-from app.modules.station_support.router import router as station_support_router
-from app.modules.zones.router import router as zones_router
+from app.modules.service_controls.router import router as service_controls_router
+from app.modules.admin_ops.router import router as admin_ops_router
+from app.modules.release.router import router as release_router
 
 router = APIRouter(prefix=settings.api_prefix)
 
@@ -57,6 +57,6 @@ router.include_router(hangers_router, prefix="/hangers", tags=["hangers"])
 router.include_router(inventory_router, prefix="/inventory", tags=["inventory"])
 router.include_router(audit_router, prefix="/audit", tags=["audit"])
 router.include_router(reports_router, prefix="/reports", tags=["reports"])
-router.include_router(ratings_router, prefix="/ratings", tags=["ratings"])
-router.include_router(station_support_router, prefix="/station-support", tags=["station-support"])
-router.include_router(zones_router, prefix="/zones", tags=["zones"])
+router.include_router(service_controls_router, prefix="/service-controls", tags=["service-controls"])
+router.include_router(admin_ops_router, prefix="/admin", tags=["admin-operations"])
+router.include_router(release_router, prefix="/release", tags=["release"])

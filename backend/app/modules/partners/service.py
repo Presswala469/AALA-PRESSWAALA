@@ -2,11 +2,6 @@ from datetime import datetime, timezone
 from app.modules.partners import repository as repo
 def create(data): return repo.create_partner(data)
 def list_all(station_code=None): return repo.list_partners(station_code)
-def list_for_partner_claims(claims):
-    from app.core.permissions import current_partner_id
-    pid = current_partner_id(claims)
-    row = repo.get_partner(pid)
-    return [row] if row else []
 def assign(partner_id,station_code):
     if not repo._partners.get(partner_id) and not repo.assignment(partner_id): raise ValueError('Partner not found')
     return repo.assign(partner_id,station_code)

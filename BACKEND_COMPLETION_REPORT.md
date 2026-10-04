@@ -1,5 +1,5 @@
 # AALA PRESSWAALA — Backend Completion / Hardening Report
-Version: 1.12
+Version: 1.11
 Source reviewed: Presswala.zip
 Basis: existing backend code + project FSD v2.5 requirements already established for this project.
 
@@ -14,7 +14,7 @@ Basis: existing backend code + project FSD v2.5 requirements already established
 2. **Automated regression**
    - Fixed the test isolation problem that could accidentally use a real database.
    - Added test authentication for protected partner operations.
-   - Regression result: **37/37 tests passed**.
+   - Regression result: **35/35 tests passed**.
 
 3. **Payments**
    - Added a real Razorpay adapter using configured credentials.
@@ -39,14 +39,7 @@ Basis: existing backend code + project FSD v2.5 requirements already established
    - Added `reportlab` dependency.
    - Invoice PDF uses the stored company snapshot, invoice number, order, tax and total values.
 
-7. **RBAC / API security hardening**
-   - Station Operations endpoints now require authenticated role-based access; station reads are limited to Super Admin/Admin/Station Manager and station arrival accepts Partner access.
-   - Partner pickup operations, delivery operations, order state transitions, payment endpoints, invoice endpoints, customer/address endpoints, complaints, hangers and notification endpoints now require authentication/appropriate roles.
-   - Added regression coverage for unauthenticated station access and authenticated Station Manager access.
-   - Public catalog/company/quote endpoints remain intentionally public.
-   - **Station-to-user assignment isolation remains a production gate:** the current persistence schema has partner-to-station assignments but does not yet provide a user/station-manager assignment table or station-code claim in JWT. This pass therefore enforces authentication and role boundaries but does not claim complete station-manager-to-station isolation.
-
-8. **Dependencies**
+7. **Dependencies**
    - Added explicit `email-validator`, `PyJWT`, and `reportlab` dependencies because the source code uses those packages directly.
 
 ## Verification performed

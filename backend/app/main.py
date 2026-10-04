@@ -1,6 +1,7 @@
 from fastapi import FastAPI, Request
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
+from uuid import uuid4
 
 from app.api.router import router
 from app.core.config import settings
@@ -15,6 +16,17 @@ app = FastAPI(
     docs_url="/docs" if settings.environment != "production" else None,
     redoc_url="/redoc" if settings.environment != "production" else None,
 )
+
+@app.middleware("http")
+async def security_headers(request: Request, call_next):
+    request_id = request.headers.get("X-Request-ID") or str(uuid4())
+    response = await call_next(request)
+    response.headers["X-Request-ID"] = request_id
+    response.headers["X-Content-Type-Options"] = "nosniff"
+    response.headers["X-Frame-Options"] = "DENY"
+    response.headers["Referrer-Policy"] = "no-referrer"
+    return response
+
 
 app.add_middleware(
     CORSMiddleware,

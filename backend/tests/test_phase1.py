@@ -1,9 +1,7 @@
 from fastapi.testclient import TestClient
 from app.main import app
-from app.modules.auth.service import _token
 
 client = TestClient(app)
-client.headers.update({'Authorization': f'Bearer {_token("9876543210", "customer", "test-session-phase1")}'})
 
 def test_public_company_config():
     r = client.get("/api/v1/company/public")
@@ -23,7 +21,7 @@ def test_customer_global_number_is_permanent_sequence():
     assert b.json()["global_customer_number"] == a.json()["global_customer_number"] + 1
 
 def test_address_becomes_current():
-    c = client.post("/api/v1/customers", json={"mobile_number":"9876543210","full_name":"Address User"})
+    c = client.post("/api/v1/customers", json={"mobile_number":"9876543212","full_name":"Address User"})
     cid = c.json()["customer_id"]
     client.post("/api/v1/addresses", json={"customer_id":cid,"address_line":"One Street","city":"Lucknow","state":"UP","pincode":"226001"})
     client.post("/api/v1/addresses", json={"customer_id":cid,"address_line":"Two Street","city":"Lucknow","state":"UP","pincode":"226002"})

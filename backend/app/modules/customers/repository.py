@@ -11,9 +11,7 @@ def create_customer(data: dict) -> dict:
         with get_connection() as conn:
             with conn.cursor() as cur:
                 cid=f"CUS-{uuid4().hex[:10].upper()}"
-                cur.execute("select id from users where mobile_number=%s",(data['mobile_number'],))
-                user=cur.fetchone()
-                cur.execute("insert into customers(customer_id,user_id,name,mobile_number,email,alternate_mobile,photo_url) values(%s,%s,%s,%s,%s,%s,%s) returning customer_id,global_customer_number,status",(cid,user[0] if user else None,data['name'],data['mobile_number'],data.get('email'),data.get('alternate_mobile'),data.get('photo_url')))
+                cur.execute("insert into customers(customer_id,name,mobile_number,email) values(%s,%s,%s,%s) returning customer_id,global_customer_number,status",(cid,data['name'],data['mobile_number'],data.get('email')))
                 row=cur.fetchone(); conn.commit()
                 return {"customer_id":row[0],"global_customer_number":row[1],"is_active":row[2]=='active',**data}
     customer_id = f"CUS-{uuid4().hex[:10].upper()}"
@@ -24,8 +22,8 @@ def get_customer(customer_id: str):
     if settings.database_url:
         with get_connection() as conn:
             with conn.cursor() as cur:
-                cur.execute("select customer_id,global_customer_number,name,mobile_number,email,alternate_mobile,photo_url,status from customers where customer_id=%s",(customer_id,)); row=cur.fetchone()
+                cur.execute("select customer_id,global_customer_number,name,mobile_number,email,status from customers where customer_id=%s",(customer_id,)); row=cur.fetchone()
         if not row: return None
-        return {"customer_id":row[0],"global_customer_number":row[1],"name":row[2],"mobile_number":row[3],"email":row[4],"alternate_mobile":row[5],"photo_url":row[6],"is_active":row[7]=='active'}
+        return {"customer_id":row[0],"global_customer_number":row[1],"name":row[2],"mobile_number":row[3],"email":row[4],"is_active":row[5]=='active'}
     return _customers.get(customer_id)
 

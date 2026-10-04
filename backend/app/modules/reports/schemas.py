@@ -17,5 +17,5 @@ class ReportFilters(BaseModel):
 
 aREPORT_TYPES = {
     "revenue", "orders", "customers", "partners", "stations", "garments",
-    "hangers", "bags_boxes", "offers", "complaints", "customer_locations", "customer_history",
+    "hangers", "bags_boxes", "offers", "complaints", "customer_locations", "customer_history", "payments", "delivery", "notifications", "audit", "inventory_movements", "admin_actions",
 }
